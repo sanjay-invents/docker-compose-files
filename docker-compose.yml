@@ -1,0 +1,30 @@
+version: "3.8"
+
+services: 
+
+    accounts:
+        image: shoryukane/accounts:latest
+        mem_limit: 700m
+        ports: 
+            - "8080:8080"
+        networks: 
+            - shoryukane-network
+    
+    loans:
+        image: shoryukane/loans:latest
+        mem_limit: 700m
+        ports:
+            - "8090:8090"
+        networks: 
+            - shoryukane-network
+    
+    cards:
+        image: shoryukane/cards:latest
+        mem_limit: 700m
+        ports: 
+            - "9000:9000"
+        networks: 
+            - shoryukane-network
+
+networks: 
+    shoryukane-network:
