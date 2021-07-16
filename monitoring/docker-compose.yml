@@ -2,6 +2,35 @@ version: "3.8"
 
 services: 
 
+    grafana:
+        image: grafana/grafana
+        ports: 
+            - "3000:3000"
+        environment: 
+            - GF_SECURITY_ADMIN_USER=admin
+            - GF_SECURITY_ADMIN_PASSWORD=password
+        networks: 
+            - bloodseeker-network
+        depends_on: 
+            - prometheus
+
+    prometheus:
+        image: prom/prometheus:latest
+        ports: 
+            - "9090:9090"
+        volumes: 
+            - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        networks: 
+            - bloodseeker-network
+
+    zipkin:
+        image: openzipkin/zipkin
+        mem_limit: 700m
+        ports: 
+            - "9411:9411"
+        networks: 
+            - bloodseeker-network
+
     configserver:
         image: bloodseeker/configserver:latest
         mem_limit: 700m
@@ -9,6 +38,11 @@ services:
             - "8071:8071"
         networks: 
             - bloodseeker-network
+        depends_on: 
+            - zipkin
+        environment: 
+            SPRING_PRFOILES_ACTIVE: default
+            SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
 
     eurekaserver:
         image: bloodseeker/eurekaserver:latest
@@ -22,13 +56,13 @@ services:
         deploy:
             restart_policy:
                 condition: on-failure
-                delay: 5s
+                delay: 15s
                 max_attempts: 3
                 window: 120s
         environment: 
-            SPRING_PROFILES_ACTIVE: dev
+            SPRING_PROFILES_ACTIVE: default
             SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/ 
-
+            SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
 
     accounts:
         image: bloodseeker/accounts:latest
@@ -43,13 +77,35 @@ services:
         deploy:
             restart_policy:
                 condition: on-failure
-                delay: 5s
+                delay: 30s
                 max_attempts: 3
                 window: 120s
         environment: 
-            SPRING_PROFILES_ACTIVE: dev
+            SPRING_PROFILES_ACTIVE: default
             SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
             EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+            SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
+
+    # accounts1:
+    #     image: bloodseeker/accounts:latest
+    #     mem_limit: 700m
+    #     ports: 
+    #         - "8081:8080"
+    #     networks: 
+    #         - bloodseeker-network
+    #     depends_on: 
+    #         - configserver
+    #         - eurekaserver
+    #     deploy:
+    #         restart_policy:
+    #             condition: on-failure
+    #             delay: 30s
+    #             max_attempts: 3
+    #             window: 120s
+    #     environment: 
+    #         SPRING_PROFILES_ACTIVE: default
+    #         SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
+    #         EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
     
     loans:
         image: bloodseeker/loans:latest
@@ -64,13 +120,14 @@ services:
         deploy:
             restart_policy:
                 condition: on-failure
-                delay: 5s
+                delay: 30s
                 max_attempts: 3
                 window: 120s
         environment: 
-            SPRING_PROFILES_ACTIVE: dev
+            SPRING_PROFILES_ACTIVE: default
             SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
             EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+            SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
     
     cards:
         image: bloodseeker/cards:latest
@@ -85,13 +142,14 @@ services:
         deploy:
             restart_policy:
                 condition: on-failure
-                delay: 5s
+                delay: 30s
                 max_attempts: 3
                 window: 120s
         environment: 
-            SPRING_PROFILES_ACTIVE: dev
+            SPRING_PROFILES_ACTIVE: default
             SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
             EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+            SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
 
     gatewayserver:
         image: bloodseeker/gatewayserver:latest
@@ -113,9 +171,10 @@ services:
                 max_attempts: 3
                 window: 180s
         environment: 
-            SPRING_PROFILES_ACTIVE: dev
+            SPRING_PROFILES_ACTIVE: default
             SPRING_CONFIG_IMPORT: configserver:http://configserver:8071/
             EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka/
+            SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
 
 networks: 
     bloodseeker-network:
